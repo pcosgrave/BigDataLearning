@@ -1,10 +1,13 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Your AWS Site</title>
-</head>
-<body>
-  <h1>Hello AWS 🚀</h1>
-  <p>This is my first deployed system.</p>
-</body>
-</html>
+<h1>Hello AWS 🚀</h1>
+
+<button onclick="callApi()">Call API</button>
+
+<pre id="output"></pre>
+
+<script>
+async function callApi() {
+  const res = await fetch("https://epveqzu6m6.execute-api.us-east-1.amazonaws.com/hello");
+  const data = await res.json();
+  document.getElementById("output").innerText = JSON.stringify(data, null, 2);
+}
+</script>
