@@ -47,6 +47,8 @@ resource "aws_s3_object" "index" {
   source       = "${path.module}/Site/index.html"
   content_type = "text/html"
 
+  etag = filemd5("${path.module}/Site/index.html")
+
   depends_on = [
     aws_s3_bucket.site
   ]
