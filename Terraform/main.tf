@@ -54,6 +54,17 @@ resource "aws_s3_object" "index" {
   ]
 }
 
+resource "null_resource" "invalidate_cache" {
+
+  triggers = {
+    file_hash = filemd5("${path.module}/infra/index.html")
+  }
+
+  provisioner "local-exec" {
+    command = "aws cloudfront create-invalidation --distribution-id ${aws_cloudfront_distribution.cdn.id} --paths '/*'"
+  }
+}
+
 resource "aws_cloudfront_distribution" "cdn" {
   origin {
     domain_name = aws_s3_bucket_website_configuration.website.website_endpoint
