@@ -1,7 +1,7 @@
-output "website_endpoint" {
-  value = aws_s3_bucket_website_configuration.website.website_endpoint
+output "domain_name" {
+  value = aws_cloudfront_distribution.cdn.domain_name
 }
 
-output "bucket_name" {
-  value = aws_s3_bucket.site.id
+output "distribution_id" {
+  value = aws_cloudfront_distribution.cdn.id
 }

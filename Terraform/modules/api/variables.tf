@@ -1,2 +1,1 @@
-variable "bucket_name" {}
-variable "index_file" {}
+variable "lambda_zip_path" {}

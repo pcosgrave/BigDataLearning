@@ -1,7 +1,3 @@
-output "website_endpoint" {
-  value = aws_s3_bucket_website_configuration.website.website_endpoint
-}
-
-output "bucket_name" {
-  value = aws_s3_bucket.site.id
+output "api_endpoint" {
+  value = aws_apigatewayv2_api.http_api.api_endpoint
 }
