@@ -5,7 +5,7 @@ provider "aws" {
 module "s3_site" {
   source = "../../modules/s3_site"
 
-  bucket_name = "my-terraform-site-philip-2026-001"
+  bucket_name = "my-terraform-site-philip-prod-2026-001"
   index_file  = "${path.module}/../../Site/index.html"
 }
 
@@ -19,8 +19,8 @@ module "api" {
   source = "../../modules/api"
 
   lambda_zip_path = "${path.module}/../../lambda/function.zip"
-  function_name    = "terraform-api-dev"
-  lambda_role_name = "lambda-exec-role-dev"
+  function_name    = "terraform-api-prod"
+  lambda_role_name = "lambda-exec-role-prod"
 }
 
 resource "null_resource" "invalidate_cache" {

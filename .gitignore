@@ -2,3 +2,4 @@
 
 Terraform/.terraform
 Terraform/environments/dev/.terraform
+Terraform/environments/prod/.terraform
