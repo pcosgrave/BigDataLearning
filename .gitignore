@@ -1,5 +1,4 @@
-*.tfstate*
-
-Terraform/.terraform
-Terraform/environments/dev/.terraform
-Terraform/environments/prod/.terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
