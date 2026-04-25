@@ -1,0 +1,23 @@
+name: Restrict Live PR Source
+
+on:
+  pull_request:
+    branches:
+      - live
+
+jobs:
+  check-source-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check PR source branch
+        run: |
+          echo "Base branch: ${{ github.base_ref }}"
+          echo "Head branch: ${{ github.head_ref }}"
+
+          if [ "${{ github.head_ref }}" != "main" ]; then
+            echo "❌ PRs to 'live' must come from 'main'"
+            exit 1
+          fi
+
+          echo "Valid PR source"
