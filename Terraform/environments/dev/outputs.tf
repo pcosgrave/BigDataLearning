@@ -5,3 +5,7 @@ output "cloudfront_url" {
 output "api_url" {
   value = module.api.api_endpoint
 }
+
+output "events_queue_url" {
+  value = module.api.events_queue_url
+}

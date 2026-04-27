@@ -21,6 +21,7 @@ module "api" {
   lambda_zip_path = "${path.module}/../../lambda/function.zip"
   function_name    = var.function_name
   lambda_role_name = var.lambda_role_name
+  events_queue_name = var.events_queue_name
 }
 
 resource "null_resource" "invalidate_cache" {

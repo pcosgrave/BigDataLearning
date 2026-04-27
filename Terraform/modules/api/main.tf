@@ -24,9 +24,20 @@ resource "aws_lambda_function" "api" {
   role          = aws_iam_role.lambda_exec.arn
   handler       = "handler.lambda_handler"
   runtime       = "python3.11"
+  
+  depends_on = [
+    aws_iam_role_policy_attachment.lambda_basic,
+    aws_iam_role_policy.lambda_sqs_send
+  ]
 
   filename         = var.lambda_zip_path
   source_code_hash = filebase64sha256(var.lambda_zip_path)
+
+  environment {
+    variables = {
+      EVENTS_QUEUE_URL = aws_sqs_queue.events.url
+  }
+}
 }
 
 resource "aws_apigatewayv2_api" "http_api" {
@@ -72,4 +83,26 @@ resource "aws_lambda_permission" "apigw" {
   principal     = "apigateway.amazonaws.com"
 
   source_arn = "${aws_apigatewayv2_api.http_api.execution_arn}/*/*"
+}
+
+resource "aws_sqs_queue" "events" {
+  name = var.events_queue_name
+}
+
+resource "aws_iam_role_policy" "lambda_sqs_send" {
+  name = "lambda-sqs-send"
+  role = aws_iam_role.lambda_exec.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:SendMessage"
+        ]
+        Resource = aws_sqs_queue.events.arn
+      }
+    ]
+  })
 }
