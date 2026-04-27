@@ -36,8 +36,23 @@ resource "aws_lambda_function" "api" {
   environment {
     variables = {
       EVENTS_QUEUE_URL = aws_sqs_queue.events.url
+    }
   }
 }
+
+resource "aws_lambda_function" "processor" {
+  function_name = var.processor_function_name
+  role          = aws_iam_role.lambda_exec.arn
+  handler       = "handler.lambda_handler"
+  runtime       = "python3.11"
+
+  filename         = var.processor_zip_path
+  source_code_hash = filebase64sha256(var.processor_zip_path)
+
+  depends_on = [
+    aws_iam_role_policy_attachment.lambda_basic,
+    aws_iam_role_policy.lambda_sqs_read
+  ]
 }
 
 resource "aws_apigatewayv2_api" "http_api" {
@@ -105,4 +120,34 @@ resource "aws_iam_role_policy" "lambda_sqs_send" {
       }
     ]
   })
+}
+
+resource "aws_iam_role_policy" "lambda_sqs_read" {
+  name = "lambda-sqs-read"
+  role = aws_iam_role.lambda_exec.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes"
+        ]
+        Resource = aws_sqs_queue.events.arn
+      }
+    ]
+  })
+}
+
+resource "aws_lambda_event_source_mapping" "sqs_to_processor" {
+  event_source_arn = aws_sqs_queue.events.arn
+  function_name    = aws_lambda_function.processor.arn
+  batch_size       = 10
+
+  depends_on = [
+    aws_iam_role_policy.lambda_sqs_read
+  ]
 }
