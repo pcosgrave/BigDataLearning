@@ -49,9 +49,16 @@ resource "aws_lambda_function" "processor" {
   filename         = var.processor_zip_path
   source_code_hash = filebase64sha256(var.processor_zip_path)
 
+  environment {
+    variables = {
+      DATA_LAKE_BUCKET = aws_s3_bucket.data_lake.bucket
+    }
+  }
+
   depends_on = [
     aws_iam_role_policy_attachment.lambda_basic,
-    aws_iam_role_policy.lambda_sqs_read
+    aws_iam_role_policy.lambda_sqs_read,
+    aws_iam_role_policy.lambda_s3_write
   ]
 }
 
@@ -142,6 +149,24 @@ resource "aws_iam_role_policy" "lambda_sqs_read" {
   })
 }
 
+resource "aws_iam_role_policy" "lambda_s3_write" {
+  name = "lambda-s3-write"
+  role = aws_iam_role.lambda_exec.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject"
+        ]
+        Resource = "${aws_s3_bucket.data_lake.arn}/*"
+      }
+    ]
+  })
+}
+
 resource "aws_lambda_event_source_mapping" "sqs_to_processor" {
   event_source_arn = aws_sqs_queue.events.arn
   function_name    = aws_lambda_function.processor.arn
@@ -150,4 +175,8 @@ resource "aws_lambda_event_source_mapping" "sqs_to_processor" {
   depends_on = [
     aws_iam_role_policy.lambda_sqs_read
   ]
+}
+
+resource "aws_s3_bucket" "data_lake" {
+  bucket = var.data_lake_bucket_name
 }

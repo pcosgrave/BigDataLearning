@@ -4,3 +4,4 @@ variable "lambda_role_name" {}
 variable "events_queue_name" {}
 variable "processor_function_name" {}
 variable "processor_zip_path" {}
+variable "data_lake_bucket_name" {}

@@ -24,6 +24,7 @@ module "api" {
   processor_function_name  = var.processor_function_name
   lambda_role_name         = var.lambda_role_name
   events_queue_name        = var.events_queue_name
+  data_lake_bucket_name    = var.data_lake_bucket_name
 }
 
 resource "null_resource" "invalidate_cache" {
@@ -35,3 +36,4 @@ resource "null_resource" "invalidate_cache" {
     command = "aws cloudfront create-invalidation --distribution-id ${module.cloudfront.distribution_id} --paths '/*'"
   }
 }
+
