@@ -1,3 +1,7 @@
 bucket_name      = "my-site-dev-philip-2026"
 function_name    = "terraform-api-dev"
 lambda_role_name = "lambda-exec-role-dev"
+events_queue_name = "events-queue-dev"
+processor_function_name = "event-processor-dev"
+parquet_processor_function_name = "event-parquet-processor-dev"
+data_lake_bucket_name = "event-data-lake-dev-philip-2026" 

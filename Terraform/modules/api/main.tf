@@ -24,9 +24,74 @@ resource "aws_lambda_function" "api" {
   role          = aws_iam_role.lambda_exec.arn
   handler       = "handler.lambda_handler"
   runtime       = "python3.11"
+  
+  depends_on = [
+    aws_iam_role_policy_attachment.lambda_basic,
+    aws_iam_role_policy.lambda_sqs_send
+  ]
 
   filename         = var.lambda_zip_path
   source_code_hash = filebase64sha256(var.lambda_zip_path)
+
+  environment {
+    variables = {
+      EVENTS_QUEUE_URL = aws_sqs_queue.events.url
+    }
+  }
+}
+
+resource "aws_lambda_function" "processor" {
+  function_name = var.processor_function_name
+  role          = aws_iam_role.lambda_exec.arn
+  handler       = "handler.lambda_handler"
+  runtime       = "python3.11"
+
+  filename         = var.processor_zip_path
+  source_code_hash = filebase64sha256(var.processor_zip_path)
+
+  environment {
+    variables = {
+      DATA_LAKE_BUCKET = aws_s3_bucket.data_lake.bucket
+    }
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.lambda_basic,
+    aws_iam_role_policy.lambda_sqs_read,
+    aws_iam_role_policy.lambda_s3_write
+  ]
+}
+
+resource "aws_lambda_function" "parquet_processor" {
+  function_name = var.parquet_processor_function_name
+  role          = aws_iam_role.lambda_exec.arn
+  handler       = "handler.lambda_handler"
+  runtime       = "python3.11"
+
+  filename         = var.parquet_processor_zip_path
+  source_code_hash = filebase64sha256(var.parquet_processor_zip_path)
+
+  environment {
+    variables = {
+      DATA_LAKE_BUCKET = aws_s3_bucket.data_lake.bucket
+    }
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.lambda_basic,
+    aws_iam_role_policy.lambda_sqs_read,
+    aws_iam_role_policy.lambda_s3_write
+  ]
+}
+
+resource "aws_lambda_event_source_mapping" "sqs_to_parquet_processor" {
+  event_source_arn = aws_sqs_queue.events.arn
+  function_name    = aws_lambda_function.parquet_processor.arn
+  batch_size       = 10
+
+  depends_on = [
+    aws_iam_role_policy.lambda_sqs_read
+  ]
 }
 
 resource "aws_apigatewayv2_api" "http_api" {
@@ -72,4 +137,78 @@ resource "aws_lambda_permission" "apigw" {
   principal     = "apigateway.amazonaws.com"
 
   source_arn = "${aws_apigatewayv2_api.http_api.execution_arn}/*/*"
+}
+
+resource "aws_sqs_queue" "events" {
+  name = var.events_queue_name
+}
+
+resource "aws_iam_role_policy" "lambda_sqs_send" {
+  name = "lambda-sqs-send"
+  role = aws_iam_role.lambda_exec.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:SendMessage"
+        ]
+        Resource = aws_sqs_queue.events.arn
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "lambda_sqs_read" {
+  name = "lambda-sqs-read"
+  role = aws_iam_role.lambda_exec.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes"
+        ]
+        Resource = aws_sqs_queue.events.arn
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "lambda_s3_write" {
+  name = "lambda-s3-write"
+  role = aws_iam_role.lambda_exec.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject"
+        ]
+        Resource = "${aws_s3_bucket.data_lake.arn}/*"
+      }
+    ]
+  })
+}
+
+resource "aws_lambda_event_source_mapping" "sqs_to_processor" {
+  event_source_arn = aws_sqs_queue.events.arn
+  function_name    = aws_lambda_function.processor.arn
+  batch_size       = 10
+
+  depends_on = [
+    aws_iam_role_policy.lambda_sqs_read
+  ]
+}
+
+resource "aws_s3_bucket" "data_lake" {
+  bucket = var.data_lake_bucket_name
 }

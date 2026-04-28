@@ -1,3 +1,7 @@
 variable "bucket_name" {}
 variable "function_name" {}
 variable "lambda_role_name" {}
+variable "events_queue_name" {}
+variable "processor_function_name" {}
+variable "data_lake_bucket_name" {}
+variable "parquet_processor_function_name" {} 
