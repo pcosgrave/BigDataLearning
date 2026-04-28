@@ -18,13 +18,15 @@ module "cloudfront" {
 module "api" {
   source = "../../modules/api"
 
-  lambda_zip_path          = "${path.module}/../../lambda/function.zip"
-  processor_zip_path       = "${path.module}/../../processor/function.zip"
-  function_name            = var.function_name
-  processor_function_name  = var.processor_function_name
-  lambda_role_name         = var.lambda_role_name
-  events_queue_name        = var.events_queue_name
-  data_lake_bucket_name    = var.data_lake_bucket_name
+  lambda_zip_path                 = "${path.module}/../../lambda/function.zip"
+  processor_zip_path              = "${path.module}/../../processor/function.zip"
+  parquet_processor_zip_path      = "${path.module}/../../processor_parquet/function.zip"
+  function_name                   = var.function_name
+  processor_function_name         = var.processor_function_name
+  parquet_processor_function_name = var.parquet_processor_function_name
+  lambda_role_name                = var.lambda_role_name
+  events_queue_name               = var.events_queue_name
+  data_lake_bucket_name           = var.data_lake_bucket_name  
 }
 
 resource "null_resource" "invalidate_cache" {

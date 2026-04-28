@@ -62,6 +62,38 @@ resource "aws_lambda_function" "processor" {
   ]
 }
 
+resource "aws_lambda_function" "parquet_processor" {
+  function_name = var.parquet_processor_function_name
+  role          = aws_iam_role.lambda_exec.arn
+  handler       = "handler.lambda_handler"
+  runtime       = "python3.11"
+
+  filename         = var.parquet_processor_zip_path
+  source_code_hash = filebase64sha256(var.parquet_processor_zip_path)
+
+  environment {
+    variables = {
+      DATA_LAKE_BUCKET = aws_s3_bucket.data_lake.bucket
+    }
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.lambda_basic,
+    aws_iam_role_policy.lambda_sqs_read,
+    aws_iam_role_policy.lambda_s3_write
+  ]
+}
+
+resource "aws_lambda_event_source_mapping" "sqs_to_parquet_processor" {
+  event_source_arn = aws_sqs_queue.events.arn
+  function_name    = aws_lambda_function.parquet_processor.arn
+  batch_size       = 10
+
+  depends_on = [
+    aws_iam_role_policy.lambda_sqs_read
+  ]
+}
+
 resource "aws_apigatewayv2_api" "http_api" {
   name          = "terraform-api"
   protocol_type = "HTTP"
