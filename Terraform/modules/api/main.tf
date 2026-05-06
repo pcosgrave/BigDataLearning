@@ -27,7 +27,9 @@ resource "aws_lambda_function" "api" {
   
   depends_on = [
     aws_iam_role_policy_attachment.lambda_basic,
-    aws_iam_role_policy.lambda_sqs_send
+    aws_iam_role_policy.lambda_sqs_send,
+    aws_iam_role_policy.lambda_dynamodb_write,
+    aws_iam_role_policy.lambda_sns_publish
   ]
 
   filename         = var.lambda_zip_path
@@ -36,6 +38,8 @@ resource "aws_lambda_function" "api" {
   environment {
     variables = {
       EVENTS_QUEUE_URL = aws_sqs_queue.events.url
+      DYNAMODB_TABLE   = aws_dynamodb_table.events.name
+      SNS_TOPIC_ARN    = aws_sns_topic.events.arn
     }
   }
 }
@@ -211,4 +215,79 @@ resource "aws_lambda_event_source_mapping" "sqs_to_processor" {
 
 resource "aws_s3_bucket" "data_lake" {
   bucket = var.data_lake_bucket_name
+}
+
+resource "aws_dynamodb_table" "events" {
+  name         = var.dynamodb_table_name
+  billing_mode = "PAY_PER_REQUEST"
+
+  hash_key = "event_type"
+
+  attribute {
+    name = "event_type"
+    type = "S"
+  }
+}
+
+resource "aws_iam_role_policy" "lambda_dynamodb_write" {
+  name = "lambda-dynamodb-write"
+  role = aws_iam_role.lambda_exec.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:UpdateItem"
+        ]
+        Resource = aws_dynamodb_table.events.arn
+      }
+    ]
+  })
+}
+
+resource "aws_sns_topic" "events" {
+  name = var.sns_topic_name
+}
+
+resource "aws_iam_role_policy" "lambda_sns_publish" {
+  name = "lambda-sns-publish"
+  role = aws_iam_role.lambda_exec.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["sns:Publish"]
+      Resource = aws_sns_topic.events.arn
+    }]
+  })
+}
+
+resource "aws_sns_topic_subscription" "events_to_queue" {
+  topic_arn = aws_sns_topic.events.arn
+  protocol  = "sqs"
+  endpoint  = aws_sqs_queue.events.arn
+}
+
+resource "aws_sqs_queue_policy" "allow_sns" {
+  queue_url = aws_sqs_queue.events.url
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = "sns.amazonaws.com"
+      }
+      Action   = "sqs:SendMessage"
+      Resource = aws_sqs_queue.events.arn
+      Condition = {
+        ArnEquals = {
+          "aws:SourceArn" = aws_sns_topic.events.arn
+        }
+      }
+    }]
+  })
 }

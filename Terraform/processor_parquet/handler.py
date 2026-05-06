@@ -16,7 +16,12 @@ def lambda_handler(event, context):
     rows = []
 
     for record in event["Records"]:
-        message = json.loads(record["body"])
+        body = json.loads(record["body"])
+
+        if "Message" in body:
+            message = json.loads(body["Message"])
+        else:
+            message = body
 
         rows.append({
             "event_type": message.get("event_type"),

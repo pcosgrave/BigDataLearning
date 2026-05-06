@@ -7,3 +7,5 @@ variable "parquet_processor_function_name" {}
 variable "processor_zip_path" {}
 variable "parquet_processor_zip_path" {}
 variable "data_lake_bucket_name" {}
+variable "dynamodb_table_name" {}
+variable "sns_topic_name" {}

@@ -26,7 +26,9 @@ module "api" {
   parquet_processor_function_name = var.parquet_processor_function_name
   lambda_role_name                = var.lambda_role_name
   events_queue_name               = var.events_queue_name
-  data_lake_bucket_name           = var.data_lake_bucket_name  
+  data_lake_bucket_name           = var.data_lake_bucket_name
+  dynamodb_table_name             = var.dynamodb_table_name 
+  sns_topic_name                  = var.sns_topic_name 
 }
 
 resource "null_resource" "invalidate_cache" {
