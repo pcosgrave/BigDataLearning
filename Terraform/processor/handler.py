@@ -12,7 +12,13 @@ def lambda_handler(event, context):
     bucket = os.environ["DATA_LAKE_BUCKET"]
 
     for record in event["Records"]:
-        message = json.loads(record["body"])
+        body = json.loads(record["body"])
+
+        if "Message" in body:
+            message = json.loads(body["Message"])
+        else:
+            message = body
+            
         now = datetime.now(timezone.utc)
 
         clean_event = {

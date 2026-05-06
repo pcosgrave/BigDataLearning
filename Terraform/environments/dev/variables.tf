@@ -6,3 +6,4 @@ variable "processor_function_name" {}
 variable "data_lake_bucket_name" {}
 variable "parquet_processor_function_name" {} 
 variable "dynamodb_table_name" {}
+variable "sns_topic_name" {}
