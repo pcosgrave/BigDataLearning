@@ -36,6 +36,7 @@ resource "aws_lambda_function" "api" {
   environment {
     variables = {
       EVENTS_QUEUE_URL = aws_sqs_queue.events.url
+      DYNAMODB_TABLE   = aws_dynamodb_table.events.name
     }
   }
 }
@@ -211,4 +212,34 @@ resource "aws_lambda_event_source_mapping" "sqs_to_processor" {
 
 resource "aws_s3_bucket" "data_lake" {
   bucket = var.data_lake_bucket_name
+}
+
+resource "aws_dynamodb_table" "events" {
+  name         = var.dynamodb_table_name
+  billing_mode = "PAY_PER_REQUEST"
+
+  hash_key = "event_type"
+
+  attribute {
+    name = "event_type"
+    type = "S"
+  }
+}
+
+resource "aws_iam_role_policy" "lambda_dynamodb_write" {
+  name = "lambda-dynamodb-write"
+  role = aws_iam_role.lambda_exec.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:UpdateItem"
+        ]
+        Resource = aws_dynamodb_table.events.arn
+      }
+    ]
+  })
 }

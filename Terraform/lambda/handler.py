@@ -4,6 +4,7 @@ import time
 import boto3
 
 sqs = boto3.client("sqs")
+dynamodb = boto3.client("dynamodb")
 
 def response(status_code, body):
     return {
@@ -31,6 +32,22 @@ def lambda_handler(event, context):
         sqs.send_message(
             QueueUrl=queue_url,
             MessageBody=json.dumps(event_payload)
+        )
+
+        table = os.environ["DYNAMODB_TABLE"]
+
+        dynamodb.update_item(
+            TableName=table,
+            Key={
+                "event_type": {"S": "hello_called"}
+            },
+            UpdateExpression="ADD #count :inc",
+            ExpressionAttributeNames={
+                "#count": "count"
+            },
+            ExpressionAttributeValues={
+                ":inc": {"N": "1"}
+            }
         )
 
         return response(200, {
